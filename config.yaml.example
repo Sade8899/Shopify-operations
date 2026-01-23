@@ -1,0 +1,32 @@
+# Shopify Store Health Monitor Configuration - Example File
+# Copy this file to config.yaml and update with your actual values
+
+# Your Shopify store domain (without https://)
+store_domain: example.myshopify.com
+
+# Shopify Admin API version
+admin_api_version: 2024-04
+
+# Admin API access token (can be overridden by SHOPIFY_ADMIN_ACCESS_TOKEN env var)
+admin_access_token: shpat_token_here
+
+# Tag used to identify products disapproved by Google Merchant Center
+google_merchant_product_tag: google_merchant_disapproved
+
+# Directory where reports will be saved
+report_output_dir: reports
+
+# Dry run mode - set to false to enable live checks
+dry_run: true
+
+# Maximum number of products to fetch and analyze
+max_products: 250
+
+# API request timeout in seconds
+timeout_seconds: 15
+
+# Keywords to detect subscription products
+subscription_tag_keywords:
+  - subscription
+  - subscribe
+  - recurring
