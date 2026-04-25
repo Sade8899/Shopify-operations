@@ -6,19 +6,19 @@ Shopify Store Health Monitor is a Python CLI tool for running basic health check
 
 I built it because e-commerce operations teams often have to manually check for small issues that can affect sales or customer experience, such as missing SKUs, products without prices, inventory problems, or products that may not be purchasable.
 
-The tool connects to the Shopify Admin REST API, fetches product data, runs a set of validation checks, and produces text and JSON reports.
+The tool connects to the Shopify Admin REST API, fetches product data, runs a set of validation checks, and produces text, JSON and CSV reports.
 
 ## Why I Built This
 
-I wanted to build a practical operations tool using Python rather than a purely academic project. Shopify store operations involve a lot of small checks that are easy to miss when a catalogue changes often.
+During my studies and previous experience with commercial operations, I noticed that e-commerce teams spend a massive amount of time manually auditing catalogs for missing SKUs, broken pricing, and inventory syncing errors. These small data integrity issues directly impact sales and customer experience.
 
-This project gave me a way to practise API integration, data validation, CLI tooling, report generation and unit testing around a realistic e-commerce operations problem.
+I built this tool to automate that operational overhead. Instead of exporting CSVs and doing VLOOKUPs, this Python CLI connects directly to the Shopify Admin API, runs business-logic checks, and outputs a clean JSON, CSV, and text report. It allowed me to practice API integration (pagination, rate limiting), data validation, and building modular Python tooling.
 
 ## What It Does
 
 The script reads Shopify API credentials from a local config file, fetches products from the Shopify Admin REST API, converts the API response into simple Python models, and runs health checks against each product and variant.
 
-It then prints a summary in the terminal and saves reports in text and JSON formats.
+It then prints a summary in the terminal and saves reports in text, JSON and CSV formats.
 
 ## Tech Stack
 
@@ -40,7 +40,7 @@ Dependencies are listed in [requirements.txt](requirements.txt).
 - Uses rule-based cartability checks for inactive, unpublished, out-of-stock or unpriced variants.
 - Flags likely subscription products based on configured tag or product type keywords.
 - Flags products with configured merchant policy tags.
-- Generates text and JSON reports.
+- Generates text, JSON and CSV reports.
 
 ## Setup
 
@@ -167,7 +167,8 @@ Shopify-operations/
 |   `-- sample_report.txt
 |-- tests/
 |   |-- test_checks.py
-|   `-- test_report.py
+|   |-- test_report.py
+|   `-- test_shopify_client.py
 |-- config.yaml.example
 |-- models.py
 |-- report.py

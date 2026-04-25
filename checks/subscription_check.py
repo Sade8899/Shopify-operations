@@ -1,45 +1,26 @@
 """
-Subscription product check - identifies subscription products and potential issues.
+Subscription product checks based on tags and product type.
 
-Since selling plan information is not available in basic REST product responses,
-this check identifies subscription products by tags/product_type and flags them
-for manual verification.
+Selling plan details are not included in the basic REST product response used by
+this tool, so these findings are prompts for manual review.
 """
 from typing import List
 from models import ProductSummary, HealthIssue
 
 
 def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
-    """
-    Check for subscription product configuration.
-
-    Identifies products that appear to be subscriptions based on:
-    - Tags containing subscription keywords
-    - Product type containing subscription keywords
-
-    Flags these for verification since selling plan data is not accessible via basic API.
-
-    Args:
-        products: List of ProductSummary objects
-        config: Configuration dictionary
-
-    Returns:
-        List of HealthIssue objects
-    """
+    """Check for likely subscription product configuration issues."""
     issues = []
 
-    # Get subscription keywords from config
     keywords = config.get('subscription_tag_keywords', ['subscription', 'subscribe', 'recurring'])
 
     for product in products:
-        # Check tags and product type for subscription indicators
         tags_lower = product.tags.lower() if product.tags else ''
         product_type_lower = product.product_type.lower() if product.product_type else ''
 
         is_subscription = False
         matched_keyword = None
 
-        # Check if any keyword matches
         for keyword in keywords:
             if keyword.lower() in tags_lower or keyword.lower() in product_type_lower:
                 is_subscription = True
@@ -47,7 +28,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                 break
 
         if is_subscription:
-            # Flag for manual verification
             issues.append(HealthIssue(
                 check_name='subscription_check',
                 severity='info',
@@ -57,7 +37,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                 product_id=product.product_id
             ))
 
-            # Additional check: subscription product without variants
             if product.variant_count == 0:
                 issues.append(HealthIssue(
                     check_name='subscription_check',
@@ -68,7 +47,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                     product_id=product.product_id
                 ))
 
-            # Check if subscription product is published but not active
             if product.published_at and product.status != 'active':
                 issues.append(HealthIssue(
                     check_name='subscription_check',

@@ -1,8 +1,10 @@
 """Report generation for Shopify Store Health Monitor."""
+import csv
 import json
 import os
 from collections import defaultdict
 from datetime import datetime
+from io import StringIO
 from typing import Dict, List
 
 from models import HealthIssue
@@ -113,13 +115,47 @@ def render_json(issues: List[HealthIssue], store_domain: str) -> Dict:
     }
 
 
+def render_csv(issues: List[HealthIssue], store_domain: str) -> str:
+    """Render health issues as CSV for spreadsheet review."""
+    output = StringIO()
+    fieldnames = [
+        'store_domain',
+        'check_name',
+        'severity',
+        'title',
+        'details',
+        'recommended_fix',
+        'product_id',
+        'variant_id',
+        'sku'
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for issue in issues:
+        writer.writerow({
+            'store_domain': store_domain,
+            'check_name': issue.check_name,
+            'severity': issue.severity,
+            'title': issue.title,
+            'details': issue.details,
+            'recommended_fix': issue.recommended_fix,
+            'product_id': issue.product_id or '',
+            'variant_id': issue.variant_id or '',
+            'sku': issue.sku or ''
+        })
+
+    return output.getvalue()
+
+
 def save_reports(issues: List[HealthIssue], store_domain: str, output_dir: str = 'reports') -> tuple:
-    """Save text and JSON reports to disk with timestamped filenames."""
+    """Save text, JSON and CSV reports to disk with timestamped filenames."""
     os.makedirs(output_dir, exist_ok=True)
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     text_report = render_text(issues, store_domain)
     json_data = render_json(issues, store_domain)
+    csv_report = render_csv(issues, store_domain)
 
     text_path = os.path.join(output_dir, f'report_{timestamp}.txt')
     with open(text_path, 'w', encoding='utf-8') as f:
@@ -129,4 +165,8 @@ def save_reports(issues: List[HealthIssue], store_domain: str, output_dir: str =
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(json_data, f, indent=2, ensure_ascii=False)
 
-    return text_path, json_path
+    csv_path = os.path.join(output_dir, f'report_{timestamp}.csv')
+    with open(csv_path, 'w', encoding='utf-8', newline='') as f:
+        f.write(csv_report)
+
+    return text_path, json_path, csv_path

@@ -163,10 +163,11 @@ def main(argv=None):
 
         output_dir = config.get('report_output_dir', 'reports')
         print(f"\nSaving reports to {output_dir}/...")
-        text_path, json_path = save_reports(issues, config['store_domain'], output_dir)
+        text_path, json_path, csv_path = save_reports(issues, config['store_domain'], output_dir)
 
         print(f"  Text report: {text_path}")
         print(f"  JSON report: {json_path}")
+        print(f"  CSV report: {csv_path}")
 
         print_summary(issues)
 

@@ -4,7 +4,7 @@ Unit tests for report generation.
 import unittest
 import json
 from models import HealthIssue
-from report import render_text, render_json
+from report import render_text, render_json, render_csv
 
 
 class TestReportGeneration(unittest.TestCase):
@@ -46,7 +46,6 @@ class TestReportGeneration(unittest.TestCase):
         """Test that text report includes severity counts."""
         report = render_text(self.test_issues, 'test.myshopify.com')
 
-        # Check that severity counts are present
         self.assertIn('Critical: 1', report)
         self.assertIn('Warning:  1', report)
         self.assertIn('Info:     1', report)
@@ -56,7 +55,6 @@ class TestReportGeneration(unittest.TestCase):
         """Test that text report includes all issue titles."""
         report = render_text(self.test_issues, 'test.myshopify.com')
 
-        # Check that all issue titles are present
         self.assertIn('Out of stock product', report)
         self.assertIn('Low stock warning', report)
         self.assertIn('Missing SKU', report)
@@ -80,23 +78,19 @@ class TestReportGeneration(unittest.TestCase):
         """Test that JSON report has correct structure."""
         report_data = render_json(self.test_issues, 'test.myshopify.com')
 
-        # Check top-level keys
         self.assertIn('store_domain', report_data)
         self.assertIn('generated_at', report_data)
         self.assertIn('summary', report_data)
         self.assertIn('issues', report_data)
 
-        # Check store domain
         self.assertEqual(report_data['store_domain'], 'test.myshopify.com')
 
-        # Check summary counts
         summary = report_data['summary']
         self.assertEqual(summary['total_issues'], 3)
         self.assertEqual(summary['critical'], 1)
         self.assertEqual(summary['warning'], 1)
         self.assertEqual(summary['info'], 1)
 
-        # Check issues array
         self.assertEqual(len(report_data['issues']), 3)
 
     def test_render_json_issue_fields(self):
@@ -116,10 +110,16 @@ class TestReportGeneration(unittest.TestCase):
         """Test that JSON report can be serialized."""
         report_data = render_json(self.test_issues, 'test.myshopify.com')
 
-        # Should not raise exception
         json_str = json.dumps(report_data)
         self.assertIsInstance(json_str, str)
         self.assertGreater(len(json_str), 0)
+
+    def test_render_csv_includes_expected_columns_and_values(self):
+        report = render_csv(self.test_issues, 'test.myshopify.com')
+
+        self.assertIn('store_domain,check_name,severity,title', report)
+        self.assertIn('test.myshopify.com,inventory_check,critical,Out of stock product', report)
+        self.assertIn('TEST-SKU-001', report)
 
 
 class TestInventoryCheck(unittest.TestCase):
@@ -130,7 +130,6 @@ class TestInventoryCheck(unittest.TestCase):
         from models import ProductSummary, VariantSummary
         from checks.inventory_check import run
 
-        # Create mock product that is out of stock
         variant = VariantSummary(
             variant_id=1,
             title='Default',
@@ -157,7 +156,6 @@ class TestInventoryCheck(unittest.TestCase):
         config = {}
         issues = run([product], config)
 
-        # Should flag as out of stock
         self.assertGreater(len(issues), 0)
         self.assertTrue(any('out of stock' in issue.title.lower() for issue in issues))
 
@@ -166,7 +164,6 @@ class TestInventoryCheck(unittest.TestCase):
         from models import ProductSummary, VariantSummary
         from checks.inventory_check import run
 
-        # Create variant that allows overselling
         variant = VariantSummary(
             variant_id=1,
             title='Default',
@@ -176,7 +173,7 @@ class TestInventoryCheck(unittest.TestCase):
             inventory_item_id=100,
             inventory_quantity=0,
             inventory_management='shopify',
-            inventory_policy='continue'  # Allows overselling!
+            inventory_policy='continue'
         )
 
         product = ProductSummary(
@@ -193,7 +190,6 @@ class TestInventoryCheck(unittest.TestCase):
         config = {}
         issues = run([product], config)
 
-        # Should flag as critical overselling issue
         critical_issues = [i for i in issues if i.severity == 'critical']
         self.assertGreater(len(critical_issues), 0)
         self.assertTrue(any('overselling' in issue.title.lower() for issue in critical_issues))

@@ -1,36 +1,19 @@
 """
-Cartability check - identifies products that likely cannot be added to cart.
+Cartability checks for products that are likely blocked from checkout.
 
-Since we cannot truly test cart addition via API, this implements heuristic checks
-based on product/variant configuration.
+Simulates cart validation using basic product rules since we don't have storefront
+API access.
 """
 from typing import List
 from models import ProductSummary, HealthIssue
 
 
 def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
-    """
-    Check for variants that likely cannot be added to cart.
-
-    Flags variants blocked by:
-    - Product not active
-    - Product not published
-    - Variant has no price
-    - Inventory managed by Shopify, policy is deny, and quantity <= 0
-    - Inventory management is null and available is false
-
-    Args:
-        products: List of ProductSummary objects
-        config: Configuration dictionary
-
-    Returns:
-        List of HealthIssue objects
-    """
+    """Check for variants that likely cannot be added to cart."""
     issues = []
 
     for product in products:
         for variant in product.variants:
-            # Check if product is not active
             if product.status != 'active':
                 issues.append(HealthIssue(
                     check_name='cartability_check',
@@ -44,7 +27,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                 ))
                 continue
 
-            # Check if product is not published
             if not product.published_at:
                 issues.append(HealthIssue(
                     check_name='cartability_check',
@@ -58,7 +40,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                 ))
                 continue
 
-            # Check for missing or zero price
             try:
                 price_value = float(variant.price)
             except (ValueError, TypeError):
@@ -76,7 +57,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                     sku=variant.sku
                 ))
 
-            # Check inventory blocking
             if variant.inventory_management == 'shopify':
                 if (variant.inventory_policy == 'deny' and
                     variant.inventory_quantity is not None and
@@ -93,7 +73,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                         sku=variant.sku
                     ))
 
-            # Unmanaged inventory but marked unavailable
             elif variant.inventory_management is None and not variant.available:
                 issues.append(HealthIssue(
                     check_name='cartability_check',

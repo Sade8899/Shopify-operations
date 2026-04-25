@@ -95,7 +95,6 @@ class ShopifyClient:
                     timeout=self.timeout
                 )
 
-                # Handle rate limiting (429)
                 if response.status_code == 429:
                     retry_after = int(response.headers.get('Retry-After', 2))
                     if attempt < max_retries:
@@ -103,18 +102,15 @@ class ShopifyClient:
                         continue
                     raise ShopifyAPIError(f"Rate limit exceeded after {max_retries} retries")
 
-                # Handle server errors (5xx)
                 if 500 <= response.status_code < 600:
                     if attempt < max_retries:
-                        time.sleep(2 ** attempt)  # Exponential backoff
+                        time.sleep(2 ** attempt)
                         continue
                     raise ShopifyAPIError(f"Server error {response.status_code}: {response.text}")
 
-                # Handle client errors (4xx)
                 if 400 <= response.status_code < 500:
                     raise ShopifyAPIError(f"Client error {response.status_code}: {response.text}")
 
-                # Success
                 response.raise_for_status()
                 next_page_url = self._parse_link_header(response.headers.get('Link'))
                 return response.json(), next_page_url
@@ -153,9 +149,7 @@ class ShopifyClient:
                 products.extend(batch[:remaining])
                 fetched += len(batch[:remaining])
 
-                # Check if we have more pages and haven't hit limit
                 if next_url and fetched < limit:
-                    # Parse next URL to get page_info parameter
                     parsed = urlparse(next_url)
                     query_params = parse_qs(parsed.query)
                     if 'page_info' in query_params:
@@ -248,7 +242,6 @@ class ShopifyClient:
             'status': 'any'
         }
 
-        # Add query parameter if provided
         if query_string:
             params['title'] = query_string
 

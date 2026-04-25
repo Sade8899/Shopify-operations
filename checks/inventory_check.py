@@ -1,39 +1,21 @@
-"""
-Inventory health check - identifies out of stock and inventory issues.
-"""
+"""Inventory checks for stock and overselling issues."""
 from typing import List
 from models import ProductSummary, HealthIssue
 
 
 def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
-    """
-    Check for inventory issues.
-
-    Flags:
-    - Products that are active/published but have total inventory <= 0
-    - Variants with Shopify inventory management that are out of stock but purchasable
-
-    Args:
-        products: List of ProductSummary objects
-        config: Configuration dictionary
-
-    Returns:
-        List of HealthIssue objects
-    """
+    """Check for inventory issues."""
     issues = []
 
     for product in products:
-        # Skip draft products
         if product.status != 'active':
             continue
 
-        # Calculate total inventory across all variants
         total_inventory = 0
         for variant in product.variants:
             if variant.inventory_quantity is not None:
                 total_inventory += variant.inventory_quantity
 
-        # Check if published product has zero or negative inventory
         if product.published_at and total_inventory <= 0:
             issues.append(HealthIssue(
                 check_name='inventory_check',
@@ -44,9 +26,7 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                 product_id=product.product_id
             ))
 
-        # Check individual variants for misleading availability
         for variant in product.variants:
-            # Variant managed by Shopify, out of stock, but can still be purchased
             if (variant.inventory_management == 'shopify' and
                 variant.inventory_quantity is not None and
                 variant.inventory_quantity <= 0 and
@@ -63,7 +43,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                     sku=variant.sku
                 ))
 
-            # Variant not managed but marked as unavailable
             elif variant.inventory_management is None and not variant.available:
                 issues.append(HealthIssue(
                     check_name='inventory_check',

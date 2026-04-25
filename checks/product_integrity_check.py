@@ -1,30 +1,13 @@
-"""
-Product integrity check - identifies products with missing or invalid data.
-"""
+"""Product data checks for missing or invalid catalogue fields."""
 from typing import List
 from models import ProductSummary, HealthIssue
 
 
 def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
-    """
-    Check for product data integrity issues.
-
-    Flags:
-    - Products with no variants
-    - Variants with missing or zero price
-    - Products with missing title or handle
-
-    Args:
-        products: List of ProductSummary objects
-        config: Configuration dictionary
-
-    Returns:
-        List of HealthIssue objects
-    """
+    """Check for product data integrity issues."""
     issues = []
 
     for product in products:
-        # Check for missing title
         if not product.title or product.title.strip() == '':
             issues.append(HealthIssue(
                 check_name='product_integrity_check',
@@ -35,7 +18,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                 product_id=product.product_id
             ))
 
-        # Check for missing handle
         if not product.handle or product.handle.strip() == '':
             issues.append(HealthIssue(
                 check_name='product_integrity_check',
@@ -46,7 +28,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                 product_id=product.product_id
             ))
 
-        # Check for products with no variants
         if product.variant_count == 0 or len(product.variants) == 0:
             issues.append(HealthIssue(
                 check_name='product_integrity_check',
@@ -56,16 +37,14 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                 recommended_fix='Add at least one variant to the product',
                 product_id=product.product_id
             ))
-            continue  # Skip variant checks if no variants exist
+            continue
 
-        # Check each variant for price issues
         for variant in product.variants:
             try:
                 price_value = float(variant.price)
             except (ValueError, TypeError):
                 price_value = None
 
-            # Missing or invalid price
             if price_value is None:
                 issues.append(HealthIssue(
                     check_name='product_integrity_check',
@@ -78,7 +57,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                     sku=variant.sku
                 ))
 
-            # Zero price
             elif price_value == 0:
                 issues.append(HealthIssue(
                     check_name='product_integrity_check',
@@ -91,7 +69,6 @@ def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
                     sku=variant.sku
                 ))
 
-            # Missing SKU (warning, not critical)
             if not variant.sku or variant.sku.strip() == '':
                 issues.append(HealthIssue(
                     check_name='product_integrity_check',
