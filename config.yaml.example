@@ -8,7 +8,7 @@ store_domain: example.myshopify.com
 admin_api_version: 2024-04
 
 # Admin API access token (can be overridden by SHOPIFY_ADMIN_ACCESS_TOKEN env var)
-admin_access_token: shpat_token_here
+admin_access_token: replace_with_shopify_admin_access_token
 
 # Tag used to identify products disapproved by Google Merchant Center
 google_merchant_product_tag: google_merchant_disapproved

@@ -1,0 +1,67 @@
+================================================================================
+SHOPIFY STORE HEALTH REPORT
+================================================================================
+Store: example-store.myshopify.com
+Generated: 2026-01-15 10:30:00
+
+SUMMARY
+--------------------------------------------------------------------------------
+Total Issues: 5
+  Critical: 2
+  Warning:  1
+  Info:     2
+
+================================================================================
+CHECK: PRODUCT INTEGRITY CHECK
+================================================================================
+
+[CRITICAL] - 1 issue(s)
+--------------------------------------------------------------------------------
+  - Variant has zero price: Demo Hoodie - Medium
+    Product ID: 1001 | Variant ID: 2001 | SKU: DEMO-HOOD-M
+    Details: Variant ID 2001 has price of 0.00
+    Fix: Set a non-zero price or unpublish if this is a placeholder
+
+[INFO] - 1 issue(s)
+--------------------------------------------------------------------------------
+  - Variant missing SKU: Demo T-Shirt - Small
+    Product ID: 1002 | Variant ID: 2002
+    Details: Variant ID 2002 has no SKU assigned
+    Fix: Assign a SKU for inventory tracking and fulfillment
+
+================================================================================
+CHECK: CARTABILITY CHECK
+================================================================================
+
+[INFO] - 1 issue(s)
+--------------------------------------------------------------------------------
+  - Variant in unpublished product: Demo Cap - Default
+    Product ID: 1003 | Variant ID: 2003 | SKU: DEMO-CAP
+    Details: Product is not published, variant cannot be added to cart
+    Fix: Publish the product to make it available for purchase
+
+================================================================================
+CHECK: INVENTORY CHECK
+================================================================================
+
+[CRITICAL] - 1 issue(s)
+--------------------------------------------------------------------------------
+  - Variant allows overselling when out of stock: Demo Socks - One Size
+    Product ID: 1004 | Variant ID: 2004 | SKU: DEMO-SOCKS
+    Details: Variant ID 2004 has inventory 0 but policy is "continue"
+    Fix: Change inventory policy to "deny" or restock inventory
+
+================================================================================
+CHECK: MERCHANT POLICY CHECK
+================================================================================
+
+[WARNING] - 1 issue(s)
+--------------------------------------------------------------------------------
+  - Product missing image: Demo Backpack
+    Product ID: 1005
+    Details: Product has no main image in the sample data
+    Fix: Add at least one clear product image before publishing
+
+================================================================================
+END OF REPORT
+================================================================================

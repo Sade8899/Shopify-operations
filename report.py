@@ -1,28 +1,17 @@
-"""
-Report generation for Shopify Store Health Monitor.
-"""
+"""Report generation for Shopify Store Health Monitor."""
 import json
 import os
-from datetime import datetime
-from typing import List, Dict
 from collections import defaultdict
+from datetime import datetime
+from typing import Dict, List
+
 from models import HealthIssue
 
 
 def render_text(issues: List[HealthIssue], store_domain: str) -> str:
-    """
-    Render health issues as formatted text report.
-
-    Args:
-        issues: List of HealthIssue objects
-        store_domain: Shopify store domain
-
-    Returns:
-        Formatted text report
-    """
+    """Render health issues as a formatted text report."""
     lines = []
 
-    # Header
     lines.append("=" * 80)
     lines.append("SHOPIFY STORE HEALTH REPORT")
     lines.append("=" * 80)
@@ -30,7 +19,6 @@ def render_text(issues: List[HealthIssue], store_domain: str) -> str:
     lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     lines.append("")
 
-    # Summary counts by severity
     severity_counts = defaultdict(int)
     for issue in issues:
         severity_counts[issue.severity] += 1
@@ -44,26 +32,20 @@ def render_text(issues: List[HealthIssue], store_domain: str) -> str:
     lines.append("")
 
     if not issues:
-        lines.append("No issues found! Your store is in great shape.")
+        lines.append("No issues found.")
         lines.append("=" * 80)
         return "\n".join(lines)
 
-    # Group issues by check name, then by severity
     issues_by_check = defaultdict(lambda: defaultdict(list))
     for issue in issues:
         issues_by_check[issue.check_name][issue.severity].append(issue)
 
-    # Sort check names for consistent output
-    check_names = sorted(issues_by_check.keys())
-
-    # Report each check's issues
-    for check_name in check_names:
+    for check_name in sorted(issues_by_check.keys()):
         lines.append("")
         lines.append("=" * 80)
         lines.append(f"CHECK: {check_name.replace('_', ' ').upper()}")
         lines.append("=" * 80)
 
-        # Process in severity order: critical, warning, info
         for severity in ['critical', 'warning', 'info']:
             if severity not in issues_by_check[check_name]:
                 continue
@@ -74,7 +56,6 @@ def render_text(issues: List[HealthIssue], store_domain: str) -> str:
             lines.append("-" * 80)
 
             for issue in severity_issues:
-                # Build issue line
                 issue_parts = []
 
                 if issue.product_id:
@@ -86,8 +67,7 @@ def render_text(issues: List[HealthIssue], store_domain: str) -> str:
                 if issue.sku:
                     issue_parts.append(f"SKU: {issue.sku}")
 
-                # Format the issue
-                lines.append(f"  • {issue.title}")
+                lines.append(f"  - {issue.title}")
                 if issue_parts:
                     lines.append(f"    {' | '.join(issue_parts)}")
                 lines.append(f"    Details: {issue.details}")
@@ -102,22 +82,11 @@ def render_text(issues: List[HealthIssue], store_domain: str) -> str:
 
 
 def render_json(issues: List[HealthIssue], store_domain: str) -> Dict:
-    """
-    Render health issues as JSON-serializable dictionary.
-
-    Args:
-        issues: List of HealthIssue objects
-        store_domain: Shopify store domain
-
-    Returns:
-        Dictionary suitable for JSON serialization
-    """
-    # Count by severity
+    """Render health issues as a JSON-serializable dictionary."""
     severity_counts = defaultdict(int)
     for issue in issues:
         severity_counts[issue.severity] += 1
 
-    # Convert issues to dictionaries
     issues_data = []
     for issue in issues:
         issues_data.append({
@@ -145,33 +114,17 @@ def render_json(issues: List[HealthIssue], store_domain: str) -> Dict:
 
 
 def save_reports(issues: List[HealthIssue], store_domain: str, output_dir: str = 'reports') -> tuple:
-    """
-    Save both text and JSON reports to disk with timestamp.
-
-    Args:
-        issues: List of HealthIssue objects
-        store_domain: Shopify store domain
-        output_dir: Directory to save reports
-
-    Returns:
-        Tuple of (text_file_path, json_file_path)
-    """
-    # Create output directory if it doesn't exist
+    """Save text and JSON reports to disk with timestamped filenames."""
     os.makedirs(output_dir, exist_ok=True)
 
-    # Generate timestamp for filenames
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-    # Generate reports
     text_report = render_text(issues, store_domain)
     json_data = render_json(issues, store_domain)
 
-    # Write text report
     text_path = os.path.join(output_dir, f'report_{timestamp}.txt')
     with open(text_path, 'w', encoding='utf-8') as f:
         f.write(text_report)
 
-    # Write JSON report
     json_path = os.path.join(output_dir, f'report_{timestamp}.json')
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(json_data, f, indent=2, ensure_ascii=False)

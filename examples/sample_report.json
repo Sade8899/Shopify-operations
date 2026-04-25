@@ -1,0 +1,62 @@
+{
+  "store_domain": "example-store.myshopify.com",
+  "generated_at": "2026-01-15T10:30:00",
+  "summary": {
+    "total_issues": 5,
+    "critical": 2,
+    "warning": 1,
+    "info": 2
+  },
+  "issues": [
+    {
+      "check_name": "product_integrity_check",
+      "severity": "info",
+      "title": "Variant missing SKU: Demo T-Shirt - Small",
+      "details": "Variant ID 2002 has no SKU assigned",
+      "recommended_fix": "Assign a SKU for inventory tracking and fulfillment",
+      "product_id": 1002,
+      "variant_id": 2002,
+      "sku": null
+    },
+    {
+      "check_name": "product_integrity_check",
+      "severity": "critical",
+      "title": "Variant has zero price: Demo Hoodie - Medium",
+      "details": "Variant ID 2001 has price of 0.00",
+      "recommended_fix": "Set a non-zero price or unpublish if this is a placeholder",
+      "product_id": 1001,
+      "variant_id": 2001,
+      "sku": "DEMO-HOOD-M"
+    },
+    {
+      "check_name": "cartability_check",
+      "severity": "info",
+      "title": "Variant in unpublished product: Demo Cap - Default",
+      "details": "Product is not published, variant cannot be added to cart",
+      "recommended_fix": "Publish the product to make it available for purchase",
+      "product_id": 1003,
+      "variant_id": 2003,
+      "sku": "DEMO-CAP"
+    },
+    {
+      "check_name": "inventory_check",
+      "severity": "critical",
+      "title": "Variant allows overselling when out of stock: Demo Socks - One Size",
+      "details": "Variant ID 2004 has inventory 0 but policy is \"continue\"",
+      "recommended_fix": "Change inventory policy to \"deny\" or restock inventory",
+      "product_id": 1004,
+      "variant_id": 2004,
+      "sku": "DEMO-SOCKS"
+    },
+    {
+      "check_name": "merchant_policy_check",
+      "severity": "warning",
+      "title": "Product missing image: Demo Backpack",
+      "details": "Product has no main image in the sample data",
+      "recommended_fix": "Add at least one clear product image before publishing",
+      "product_id": 1005,
+      "variant_id": null,
+      "sku": null
+    }
+  ]
+}

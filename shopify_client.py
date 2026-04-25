@@ -7,6 +7,10 @@ from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse, parse_qs
 
 
+SHOPIFY_MAX_PAGE_SIZE = 250
+INVENTORY_LEVEL_BATCH_SIZE = 50
+
+
 class ShopifyAPIError(Exception):
     """Exception raised for Shopify API errors."""
     pass
@@ -129,19 +133,11 @@ class ShopifyClient:
 
         raise ShopifyAPIError("Request failed after all retries")
 
-    def get_products(self, limit: int = 250) -> List[Dict]:
-        """
-        Fetch products with pagination support.
-
-        Args:
-            limit: Maximum number of products to fetch
-
-        Returns:
-            List of product dictionaries
-        """
+    def get_products(self, limit: int = SHOPIFY_MAX_PAGE_SIZE) -> List[Dict]:
+        """Fetch products with pagination support."""
         products = []
         params = {
-            'limit': min(limit, 250),  # Shopify max is 250 per page
+            'limit': min(limit, SHOPIFY_MAX_PAGE_SIZE),
             'status': 'any'
         }
 
@@ -163,7 +159,10 @@ class ShopifyClient:
                     parsed = urlparse(next_url)
                     query_params = parse_qs(parsed.query)
                     if 'page_info' in query_params:
-                        params = {'page_info': query_params['page_info'][0], 'limit': min(250, limit - fetched)}
+                        params = {
+                            'page_info': query_params['page_info'][0],
+                            'limit': min(SHOPIFY_MAX_PAGE_SIZE, limit - fetched)
+                        }
                         endpoint = '/products.json'
                     else:
                         break
@@ -199,12 +198,10 @@ class ShopifyClient:
         if not inventory_item_ids:
             return []
 
-        # Batch inventory item IDs (API has query length limits)
-        batch_size = 50
         all_levels = []
 
-        for i in range(0, len(inventory_item_ids), batch_size):
-            batch = inventory_item_ids[i:i + batch_size]
+        for i in range(0, len(inventory_item_ids), INVENTORY_LEVEL_BATCH_SIZE):
+            batch = inventory_item_ids[i:i + INVENTORY_LEVEL_BATCH_SIZE]
             params = {
                 'inventory_item_ids': ','.join(map(str, batch))
             }
@@ -234,7 +231,7 @@ class ShopifyClient:
         except ShopifyAPIError:
             return None
 
-    def search_products_by_query(self, query_string: str, limit: int = 250) -> List[Dict]:
+    def search_products_by_query(self, query_string: str, limit: int = SHOPIFY_MAX_PAGE_SIZE) -> List[Dict]:
         """
         Search products using Shopify query syntax.
 
@@ -247,7 +244,7 @@ class ShopifyClient:
         """
         products = []
         params = {
-            'limit': min(limit, 250),
+            'limit': min(limit, SHOPIFY_MAX_PAGE_SIZE),
             'status': 'any'
         }
 

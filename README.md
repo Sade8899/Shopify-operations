@@ -1,340 +1,204 @@
-# Shopify Store Health and Automation Monitor
+# Shopify Store Health Monitor
 
-A command-line tool for Shopify operations teams to run automated health checks against a Shopify store and generate actionable reports for stakeholders.
+A Python CLI tool that checks a Shopify store for common product, inventory and configuration issues using the Shopify Admin REST API.
 
-## Problem Statement
+Shopify Store Health Monitor is a Python CLI tool for running basic health checks on a Shopify store catalogue.
 
-E-commerce operations teams face constant challenges keeping Shopify stores healthy:
-- Products go out of stock without alerting stakeholders
-- Product data integrity issues (missing prices, SKUs, or variants) can block sales
-- Inventory policies misconfigured leading to overselling or underselling
-- Subscription products may lack proper selling plan configurations
-- Google Merchant Center disapprovals may go unnoticed
+I built it because e-commerce operations teams often have to manually check for small issues that can affect sales or customer experience, such as missing SKUs, products without prices, inventory problems, or products that may not be purchasable.
 
-This tool automates discovery of these issues and generates clear, actionable reports that both technical and non-technical stakeholders can understand.
+The tool connects to the Shopify Admin REST API, fetches product data, runs a set of validation checks, and produces text and JSON reports.
 
-## Features
+## Why I Built This
 
-### Health Checks
+I wanted to build a practical operations tool using Python rather than a purely academic project. Shopify store operations involve a lot of small checks that are easy to miss when a catalogue changes often.
 
-1. **Inventory Check** - Identifies out-of-stock products and inventory policy misconfigurations
-2. **Product Integrity Check** - Finds products with missing variants, prices, or SKUs
-3. **Cartability Check** - Flags products that likely cannot be added to cart
-4. **Subscription Check** - Detects subscription products and flags configuration issues
-5. **Merchant Policy Check** - Identifies products tagged for Google Merchant Center issues
+This project gave me a way to practise API integration, data validation, CLI tooling, report generation and unit testing around a realistic e-commerce operations problem.
 
-### Reporting
+## What It Does
 
-- **Text Reports**: Human-readable summaries with issue counts by severity
-- **JSON Reports**: Machine-readable data for integration with other tools
-- **Timestamped Output**: All reports saved with timestamps for historical tracking
-- **Severity Levels**: Issues categorized as Critical, Warning, or Info
+The script reads Shopify API credentials from a local config file, fetches products from the Shopify Admin REST API, converts the API response into simple Python models, and runs health checks against each product and variant.
 
-## Requirements
+It then prints a summary in the terminal and saves reports in text and JSON formats.
 
-- Python 3.11+
-- Shopify Admin API access token
-- Internet connection
+## Tech Stack
 
-## Installation
+- Python 3.11 recommended
+- Shopify Admin REST API
+- `requests` for HTTP requests
+- `PyYAML` for configuration
+- `unittest` for tests
 
-1. Clone this repository:
+Dependencies are listed in [requirements.txt](requirements.txt).
+
+## Key Features
+
+- Fetches Shopify products with REST API pagination.
+- Checks for missing titles, handles, variants, SKUs and prices.
+- Flags zero-price or invalid-price variants.
+- Flags active published products with no inventory.
+- Flags variants that allow overselling when inventory is zero or below.
+- Uses rule-based cartability checks for inactive, unpublished, out-of-stock or unpriced variants.
+- Flags likely subscription products based on configured tag or product type keywords.
+- Flags products with configured merchant policy tags.
+- Generates text and JSON reports.
+
+## Setup
+
+Clone the repository and install the dependencies:
+
 ```bash
 git clone <repository-url>
 cd Shopify-operations
-```
-
-2. Install dependencies:
-```bash
-pip install requests pyyaml
+pip install -r requirements.txt
 ```
 
 ## Configuration
 
-### 1. Get a Shopify Admin API Access Token
+Copy the example config file:
 
-You need an Admin API access token with the following permissions:
-- `read_products`
-- `read_inventory`
-- `read_locations`
+```bash
+cp config.yaml.example config.yaml
+```
 
-To create one:
-1. Log in to your Shopify admin panel
-2. Navigate to Settings > Apps and sales channels > Develop apps
-3. Create a new app or select an existing one
-4. Configure Admin API scopes (read_products, read_inventory, read_locations)
-5. Install the app and copy the Admin API access token
+On Windows PowerShell:
 
-### 2. Configure config.yaml
+```powershell
+Copy-Item config.yaml.example config.yaml
+```
 
-Edit `config.yaml` with your store details:
+Edit `config.yaml` with your own Shopify development store details:
 
 ```yaml
-# Your Shopify store domain (without https://)
-store_domain: your-store.myshopify.com
-
-# Shopify Admin API version
+store_domain: example.myshopify.com
 admin_api_version: 2024-04
-
-# Admin API access token
-admin_access_token: shpat_your_token_here
-
-# Tag used to identify products disapproved by Google Merchant Center
+admin_access_token: replace_with_shopify_admin_access_token
 google_merchant_product_tag: google_merchant_disapproved
-
-# Directory where reports will be saved
 report_output_dir: reports
-
-# Dry run mode - set to false when ready for live checks
-dry_run: false
-
-# Maximum number of products to fetch and analyze
+dry_run: true
 max_products: 250
-
-# API request timeout in seconds
 timeout_seconds: 15
-
-# Keywords to detect subscription products
 subscription_tag_keywords:
   - subscription
   - subscribe
   - recurring
 ```
 
-### 3. Environment Variable Override (Optional)
-
-For security, you can set the access token via environment variable:
+The token can also be provided through an environment variable:
 
 ```bash
-export SHOPIFY_ADMIN_ACCESS_TOKEN=shpat_your_token_here
+export SHOPIFY_ADMIN_ACCESS_TOKEN=replace_with_shopify_admin_access_token
 ```
 
-This overrides the `admin_access_token` in config.yaml.
+On Windows PowerShell:
 
-## Usage
+```powershell
+$env:SHOPIFY_ADMIN_ACCESS_TOKEN = "replace_with_shopify_admin_access_token"
+```
 
-Run the health monitor:
+The access token should have read-only scopes for product and inventory data, such as `read_products`, `read_inventory` and `read_locations`.
+
+Do not commit `config.yaml`, `.env`, access tokens or generated reports. These files are ignored because they can contain private store data.
+
+## Running The Tool
+
+Run the CLI:
 
 ```bash
 python run.py
 ```
 
-### Example Output
+Use a different config path:
 
-```
-Shopify Store Health and Automation Monitor
-================================================================================
-
-Loading configuration...
-Configuration loaded for store: your-store.myshopify.com
-
-Initializing Shopify API client...
-
-Fetching up to 250 products from Shopify...
-Retrieved 150 products
-Successfully parsed 150 products
-
-Running 5 health checks...
-  Running inventory_check... found 8 issue(s)
-  Running product_integrity_check... found 3 issue(s)
-  Running cartability_check... found 5 issue(s)
-  Running subscription_check... found 2 issue(s)
-  Running merchant_policy_check... found 1 issue(s)
-
-Saving reports to reports/...
-  Text report: reports/report_20240115_143022.txt
-  JSON report: reports/report_20240115_143022.json
-
-================================================================================
-HEALTH CHECK SUMMARY
-================================================================================
-Total Issues Found: 19
-  🔴 Critical: 6
-  🟡 Warning:  8
-  🔵 Info:     5
-
-Issues by Check:
-  cartability_check: 5
-  inventory_check: 8
-  merchant_policy_check: 1
-  product_integrity_check: 3
-  subscription_check: 2
-================================================================================
-
-⚠️  6 critical issue(s) require immediate attention!
+```bash
+python run.py --config path/to/config.yaml
 ```
 
-### Sample Report Excerpt
+The script will:
 
-```
-================================================================================
-CHECK: INVENTORY CHECK
-================================================================================
+- load `config.yaml`
+- fetch products from the Shopify Admin REST API
+- run the configured checks
+- print a summary
+- save reports in the configured `reports/` directory
 
-[CRITICAL] - 2 issue(s)
---------------------------------------------------------------------------------
-  • Variant allows overselling when out of stock: Winter Jacket - Medium
-    Product ID: 7891011 | Variant ID: 41234567 | SKU: WJ-M-BLK
-    Details: Variant ID 41234567 has inventory 0 but policy is "continue"
-    Fix: Change inventory policy to "deny" or restock inventory
-
-[WARNING] - 3 issue(s)
---------------------------------------------------------------------------------
-  • Published product out of stock: Summer T-Shirt
-    Product ID: 7891012
-    Details: Product ID 7891012 is published and active but has total inventory of 0
-    Fix: Restock inventory or unpublish product to avoid customer disappointment
-```
-
-## Extending with New Checks
-
-To add a new health check:
-
-1. Create a new file in `checks/` directory (e.g., `checks/my_custom_check.py`)
-
-2. Implement a `run()` function:
-
-```python
-from typing import List
-from models import ProductSummary, HealthIssue
-
-def run(products: List[ProductSummary], config: dict) -> List[HealthIssue]:
-    """
-    Your check description.
-
-    Args:
-        products: List of ProductSummary objects
-        config: Configuration dictionary
-
-    Returns:
-        List of HealthIssue objects
-    """
-    issues = []
-
-    for product in products:
-        # Your check logic here
-        if some_condition:
-            issues.append(HealthIssue(
-                check_name='my_custom_check',
-                severity='warning',  # 'critical', 'warning', or 'info'
-                title='Issue title',
-                details='Detailed description',
-                recommended_fix='How to fix this',
-                product_id=product.product_id
-            ))
-
-    return issues
-```
-
-3. Import your check in `checks/__init__.py`:
-
-```python
-from . import my_custom_check
-
-ALL_CHECKS = [
-    # ... existing checks ...
-    my_custom_check
-]
-```
-
-## Testing
-
-Run unit tests:
+Run tests:
 
 ```bash
 python -m unittest discover tests
 ```
 
-Run specific test file:
+## Example Output
 
-```bash
-python -m unittest tests.test_report
+Example reports using fake data are included here:
+
+- [examples/sample_report.txt](examples/sample_report.txt)
+- [examples/sample_report.json](examples/sample_report.json)
+
+Short example:
+
+```text
+HEALTH CHECK SUMMARY
+================================================================================
+Total Issues Found: 5
+  Critical: 2
+  Warning:  1
+  Info:     2
+
+Issues by Check:
+  cartability_check: 1
+  inventory_check: 1
+  merchant_policy_check: 1
+  product_integrity_check: 2
+================================================================================
 ```
-
-## Security Notes
-
-- **Never commit your access token** to version control
-- Use environment variables for tokens in CI/CD environments
-- Tokens should have minimal required permissions (read-only)
-- Rotate tokens regularly following your security policy
-- The `reports/` directory may contain sensitive product data - add to `.gitignore`
-
-## Limitations
-
-### Known Limitations
-
-1. **Cartability is Heuristic**: The tool cannot actually test adding products to cart via API. It uses configuration-based heuristics to predict cartability issues.
-
-2. **Subscription Checks are Informational**: Selling plan data is not available in basic REST API product responses. Subscription checks identify potential subscription products but cannot verify selling plan configuration without integration to specific subscription apps (Recharge, Seal Subscriptions, etc.).
-
-3. **No Metafield Access**: Product metafields (like GTIN, MPN, brand) are not easily accessible without additional API calls. The merchant policy check uses tag-based heuristics instead.
-
-4. **Rate Limiting**: The tool respects Shopify API rate limits with automatic retries, but very large stores (1000+ products) may take several minutes to analyze.
-
-5. **Read-Only**: This tool only reads data and generates reports. It does not modify your store.
-
-## Performance Optimization
-
-- Set `max_products` to limit analysis scope for large stores
-- API calls are batched where possible (e.g., inventory levels)
-- Products are fetched once and reused across all checks
-- Pagination is handled automatically
-
-## Troubleshooting
-
-### "Configuration file not found"
-Make sure `config.yaml` exists in the directory where you run the script.
-
-### "Client error 401"
-Your access token is invalid or expired. Generate a new one.
-
-### "Client error 403"
-Your access token lacks required permissions. Ensure it has read_products, read_inventory, and read_locations scopes.
-
-### "Rate limit exceeded"
-The tool already implements retry logic. If this persists, reduce `max_products` or wait before running again.
 
 ## Project Structure
 
-```
+```text
 Shopify-operations/
-├── run.py                          # Main entry point
-├── config.yaml                     # Configuration file
-├── shopify_client.py              # Shopify API client
-├── models.py                       # Data models
-├── report.py                       # Report generation
-├── checks/                         # Health check modules
-│   ├── __init__.py
-│   ├── inventory_check.py
-│   ├── product_integrity_check.py
-│   ├── cartability_check.py
-│   ├── subscription_check.py
-│   └── merchant_policy_check.py
-├── tests/                          # Unit tests
-│   ├── __init__.py
-│   └── test_report.py
-├── reports/                        # Generated reports (created at runtime)
-└── README.md                       # This file
+|-- checks/
+|   |-- cartability_check.py
+|   |-- inventory_check.py
+|   |-- merchant_policy_check.py
+|   |-- product_integrity_check.py
+|   `-- subscription_check.py
+|-- examples/
+|   |-- sample_report.json
+|   `-- sample_report.txt
+|-- tests/
+|   |-- test_checks.py
+|   `-- test_report.py
+|-- config.yaml.example
+|-- models.py
+|-- report.py
+|-- requirements.txt
+|-- run.py
+`-- shopify_client.py
 ```
 
-## Contributing
+## What I Learned
 
-Contributions are welcome! Areas for improvement:
-- Additional health checks (SEO, image optimization, etc.)
-- Integration with alerting systems (Slack, email)
-- Historical trend analysis
-- GraphQL API support for better performance
-- Metafield analysis
+- How to structure a small Python CLI project.
+- How to work with a real external REST API and handle pagination.
+- How to keep local configuration separate from committed code.
+- How to turn API responses into simpler internal models.
+- How to write checks that produce readable operational reports.
+- How to test report output and validation logic with fake data.
 
-## License
+## Current Limitations
 
-This is a portfolio project. Use freely for learning and professional development.
+- Cartability checks are rule based and do not simulate a real checkout.
+- The tool currently runs locally as a CLI script.
+- It does not include a database or scheduled monitoring.
+- For very large stores, performance may need improvement.
+- Some checks depend on what data the Shopify API returns and what permissions the token has.
+- Subscription checks only identify likely subscription products from tags or product types because selling plan data is not included in the basic product response used here.
+- Merchant policy checks are tag based and do not connect directly to Google Merchant Center.
 
-## Author
+## Next Steps
 
-Built as a portfolio project for Shopify operations roles, demonstrating:
-- Shopify Admin API integration
-- Python best practices
-- Clean architecture and extensibility
-- Production-ready error handling
-- Documentation for non-technical stakeholders
+- Expand the GitHub Actions workflow if the project adds linting or coverage checks.
+- Add more unit tests for checks and report generation.
+- Add more fake sample data for testing edge cases.
+- Consider async fetching for large catalogues.
+- Optionally add Slack or email alerts later.
